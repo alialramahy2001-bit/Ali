@@ -13,9 +13,7 @@ import {
   Ruler,
   BadgeDollarSign,
   PieChart,
-  Minus,
-  Sparkles,
-  Send
+  Minus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -30,10 +28,9 @@ import {
   Bar,
   Cell
 } from 'recharts';
-import { askAssistant } from './services/gemini';
 
 // Types
-type Tab = 'home' | 'notes' | 'converters' | 'finance' | 'analytics' | 'ai';
+type Tab = 'home' | 'notes' | 'converters' | 'finance' | 'analytics';
 
 interface Note {
   id: string;
@@ -120,7 +117,6 @@ export default function App() {
       case 'converters': return <ConvertersTab convValue={convValue} setConvValue={setConvValue} convFrom={convFrom} setConvFrom={setConvFrom} convTo={convTo} setConvTo={setConvTo} />;
       case 'finance': return <FinanceTab salary={salary} setSalary={setSalary} deductions={deductions} setDeductions={setDeductions} entries={financeEntries} addEntry={addFinanceEntry} deleteEntry={deleteFinanceEntry} />;
       case 'analytics': return <AnalyticsTab entries={financeEntries} salary={salary} deductions={deductions} />;
-      case 'ai': return <AITab />;
       default: return null;
     }
   };
@@ -156,9 +152,8 @@ export default function App() {
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/90 backdrop-blur-lg border-t border-slate-100 px-4 py-3 flex justify-between items-center z-50">
         <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<Home size={22} />} label="الرئيسية" />
-        <NavButton active={activeTab === 'notes'} onClick={() => setActiveTab('notes')} icon={<StickyNote size={22} />} label="ملاحظاتي" />
+        <NavButton active={activeTab === 'notes'} onClick={() => setActiveTab('notes')} icon={<StickyNote size={22} />} label="الملاحظات" />
         <NavButton active={activeTab === 'converters'} onClick={() => setActiveTab('converters')} icon={<ArrowLeftRight size={22} />} label="المحولات" />
-        <NavButton active={activeTab === 'ai'} onClick={() => setActiveTab('ai')} icon={<Sparkles size={22} />} label="الـذكاء" />
         <NavButton active={activeTab === 'finance'} onClick={() => setActiveTab('finance')} icon={<Wallet size={22} />} label="المالية" />
         <NavButton active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} icon={<BarChart3 size={22} />} label="التحليلات" />
       </nav>
@@ -186,7 +181,6 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
 function HomeTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const cards = [
     { id: 'notes', title: 'الملاحظات', sub: 'سجل أفكارك', icon: <StickyNote className="text-yellow-500" />, tab: 'notes' as Tab },
-    { id: 'ai', title: 'المساعد الذكي', sub: 'اسأل الذكاء الاصطناعي', icon: <Sparkles className="text-pink-500" />, tab: 'ai' as Tab },
     { id: 'converters', title: 'المحولات', sub: 'طول، وزن، عملة', icon: <ArrowLeftRight className="text-emerald-500" />, tab: 'converters' as Tab },
     { id: 'finance', title: 'المالية', sub: 'رواتب وديون', icon: <Wallet className="text-blue-500" />, tab: 'finance' as Tab },
     { id: 'analytics', title: 'الإحصائيات', sub: 'رسوم بيانية', icon: <BarChart3 className="text-purple-500" />, tab: 'analytics' as Tab },
@@ -493,96 +487,6 @@ function FinanceTab({ salary, setSalary, deductions, setDeductions, entries, add
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function AITab() {
-  const [messages, setMessages] = useState<{ role: 'user' | 'bot', text: string }[]>([
-    { role: 'bot', text: 'مرحباً! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟' }
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userMsg = input.trim();
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
-    setIsLoading(true);
-
-    try {
-      const response = await askAssistant(userMsg);
-      setMessages(prev => [...prev, { role: 'bot', text: response || 'عذراً، لم أستطع فهم ذلك.' }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { role: 'bot', text: 'حدث خطأ ما، يرجى المحاولة لاحقاً.' }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col h-[70vh] bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
-      <div className="p-4 bg-indigo-50 border-b border-indigo-100 flex items-center gap-3">
-        <Sparkles size={18} className="text-indigo-600" />
-        <span className="font-bold text-indigo-900 text-sm">المساعد الذكي</span>
-      </div>
-
-      <div 
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/30"
-      >
-        {messages.map((msg, i) => (
-          <div 
-            key={i} 
-            className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}
-          >
-            <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed ${
-              msg.role === 'user' 
-                ? 'bg-indigo-600 text-white rounded-tr-none' 
-                : 'bg-white border border-slate-100 text-slate-800 rounded-tl-none shadow-sm'
-            }`}>
-              {msg.text}
-            </div>
-          </div>
-        ))}
-        {isLoading && (
-          <div className="flex justify-end">
-            <div className="bg-white border border-slate-100 p-3 rounded-2xl rounded-tl-none animate-pulse">
-              <div className="flex gap-1">
-                <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce"></div>
-                <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce delay-100"></div>
-                <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce delay-200"></div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="p-4 bg-white border-t border-slate-100 flex gap-2">
-        <button 
-          onClick={handleSend}
-          disabled={isLoading}
-          className="bg-indigo-600 text-white p-3 rounded-2xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
-        >
-          <Send size={20} />
-        </button>
-        <input 
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="اسألني أي شيء..."
-          className="flex-1 bg-slate-100 rounded-2xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm font-medium"
-        />
-      </div>
     </div>
   );
 }
